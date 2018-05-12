@@ -128,6 +128,7 @@ class kase : public datubaze
             cout << "3. Apskatit sobridejo pirkumu sarakstu." << endl;
             cout << "4. Veikt pirkumu." << endl;
             cout << "5. Atcelt pirkumu." << endl;
+            cout << "6. Izdrukat visu precu sarakstu." << endl;
             // 13, lai beigtu.
             cout << "-- Ievadiet darbibu, kuru velaties veikt:" << endl;
             cin >> choice;
@@ -137,6 +138,7 @@ class kase : public datubaze
             else if(choice == 3) print();
             else if(choice == 4) checkOut();
             else if(choice == 5) cancel();
+            else if(choice == 6) viewAll();
             else if(choice == 13) return;
         }
     }
@@ -289,6 +291,14 @@ class kase : public datubaze
         cout << "-- Vai Jus tiesam velaties atcelt pirkumu? (1 - jaa, jebkas cits nee.)" << endl;
         cin >> choice;
         if(choice == 1) clear();
+    }
+
+    void viewAll()
+    {
+        cout << "-- Visu precu saraksts:" << endl;
+        printAll();
+        cout << "-----------------------" << endl;
+        enterToContinue();
     }
 
     /* Funkcijas, kas lietotājam nav pieejamas */
