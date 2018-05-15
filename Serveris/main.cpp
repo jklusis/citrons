@@ -2,11 +2,11 @@
 
 using namespace std;
 
-int rekursija(int virsotne, int step_count, int dati[][2], bool visited[], const int &datoru_skaits)
+int rekursija(int virsotne, int step_count, int dati[][2], bool visited[], const int &rindu_skaits)
 {
     bool plus_step = false;
     visited[virsotne-1] = true;
-    for(int i = 0; i < datoru_skaits; i++)
+    for(int i = 0; i < rindu_skaits; i++)
     {
         if(dati[i][0] == virsotne && visited[dati[i][1]-1] == false)
         {
@@ -15,7 +15,7 @@ int rekursija(int virsotne, int step_count, int dati[][2], bool visited[], const
                 step_count++;
                 plus_step = true;
             }
-            step_count = rekursija(dati[i][1], step_count, dati, visited, datoru_skaits);
+            step_count = rekursija(dati[i][1], step_count, dati, visited, rindu_skaits);
         }
 
         else if(dati[i][1] == virsotne && visited[dati[i][0]-1] == false)
@@ -25,7 +25,7 @@ int rekursija(int virsotne, int step_count, int dati[][2], bool visited[], const
                 step_count++;
                 plus_step = true;
             }
-            step_count = rekursija(dati[i][0], step_count, dati, visited, datoru_skaits);
+            step_count = rekursija(dati[i][0], step_count, dati, visited, rindu_skaits);
         }
     }
     return step_count;
@@ -89,13 +89,13 @@ int main()
     // REKURSIJA - no aizietās virsotnes ej tālāk uz nākamo virsotni, vislaik +1, beigās return soļu skaitu
     for(int virsotne = 1; virsotne <= datoru_skaits; virsotne++) // Tiek apstaigātas visas virsotnes
     {
-        for(int i = 0; i < datoru_skaits; i++)
+        for(int i = 0; i < rindu_skaits; i++)
         {
             if(dati[i][0] == virsotne)
             {
                 emptyArray(visited, datoru_skaits); // Pēc katras iterācijas ir jānotīra apmeklēto virsotņu masīvs.
                 visited[virsotne-1] = true; // Pasakam, ka sākuma virsotne ir apmeklēta.
-                temp = rekursija(dati[i][1], 1, dati, visited, datoru_skaits);
+                temp = rekursija(dati[i][1], 1, dati, visited, rindu_skaits);
                 if(temp > min_steps[virsotne-1]) min_steps[virsotne-1] = temp;
             }
 
@@ -103,7 +103,7 @@ int main()
             {
                 emptyArray(visited, datoru_skaits); // Pēc katras iterācijas ir jānotīra apmeklēto virsotņu masīvs.
                 visited[virsotne-1] = true; // Pasakam, ka sākuma virsotne ir apmeklēta.
-                temp = rekursija(dati[i][0], 1, dati, visited, datoru_skaits);
+                temp = rekursija(dati[i][0], 1, dati, visited, rindu_skaits);
                 if(temp > min_steps[virsotne-1]) min_steps[virsotne-1] = temp;
             }
 
