@@ -163,7 +163,7 @@ void Students::printAverageGradesInSemester(const char *filename, int semestris)
     
     while( file.read((char*)(this), sizeof(Students)) ) // Kamēr izdodas ielasīt veselu komponenti
     {
-        if(semestra_nr = semestris)
+        if(semestra_nr == semestris)
         { 
             atleast_one = true;
             count++;
