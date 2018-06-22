@@ -60,6 +60,8 @@ class Students
         void printAverageGradesInSemester(const char *filename, int semestris);
 
         void printInfoAboutStudentsWithGradeGreaterThan(const char *filename, int semestris, int min_atzime);
+
+        void makeBinaryAboutStudentsWith10AndOthers(const char *filename, const char *desmitnieki, const char *parejie, int semestris);
 };
 
 // U211
@@ -216,7 +218,7 @@ void Students::printInfoAboutStudentsWithGradeGreaterThan(const char *filename, 
     
     while( file.read((char*)(this), sizeof(Students)) ) // Kamēr izdodas ielasīt veselu komponenti
     {
-        if(semestra_nr = semestris) // Ja studentam ir info par padoto semestri
+        if(semestra_nr == semestris) // Ja studentam ir info par padoto semestri
         {
             // Iegūstam studenta vidējo atzīmi
             for(int i = 0; i < 10; i++)
@@ -236,6 +238,40 @@ void Students::printInfoAboutStudentsWithGradeGreaterThan(const char *filename, 
     if(rez == false)
     {
         cout << "Informacija par studentiem " << semestris << ". semestri ar atzimem augstakam par " << min_atzime << " netika atrasta." << endl;
+    }
+}
+
+void Students::makeBinaryAboutStudentsWith10AndOthers(const char *filename, const char *desmitnieki, const char *parejie, int semestris)
+{
+    // filename ir faila nosaukums, no kura ņem datus
+    // desmitnieki un pārējie attiecīgi faili, kuri tiks papildināti
+
+    fstream file(filename, ios::in | ios::binary);
+
+    while( file.read((char*)(this), sizeof(Students)) ) // Kamēr ir iespējams nolasit veselu komponenti
+    {
+        bool ir_desmit = false;
+        if(semestra_nr == semestris) // Ja komponentes semestra numurs sakrīt ar pieprasīto semestri
+        { 
+            for(int i = 0; i < 10; i++) // Skatamies, vai studentam ir desmitnieks
+            {
+                if(atzimes[i] == 10) // Ja ir
+                {
+                    ir_desmit = true;
+                    break;
+                }
+            }
+
+            if(ir_desmit == true) // Ja ir bijis kaut viens desmitnieks
+            {
+                writeObject(desmitnieki); // Izmantojam klases funkciju komponentes izvadīšanai
+            }
+
+            else
+            {
+                writeObject(parejie); // Tas pats.
+            }
+        }
     }
 }
 // --------------------------------------------------------------------------------------------------------------------
@@ -309,8 +345,27 @@ void binaryPrintInfoAboutStudentsWithGradeGreaterThan(Students &s)
     cout << "Ievadiet semestra nr." << endl;
     cin >> semestris;
     cout << "Ievadiet minimalo atzimi." << endl;
+    cin >> min_atzime;
 
     s.printInfoAboutStudentsWithGradeGreaterThan(faila_nosaukums, semestris, min_atzime);
+}
+
+void binaryMakeAboutStudentsWith10AndOthers(Students &s) 
+{
+    int semestris;
+    char desmitnieki[51];
+    char parejie[51];
+
+    cout << "-- Faila ievade: ievadiet faila nosaukumu (piem. studenti.bin)" << endl;
+    cin >> faila_nosaukums;
+    cout << "Ievadiet semestra nr." << endl;
+    cin >> semestris;
+    cout << "Ievadiet faila nosaukumu desmitniekiem (piem. desmitnieki.bin)" << endl;
+    cin >> desmitnieki;
+    cout << "Ievadiet faila nosaukumu parejiem (piem. parejie.bin" << endl;
+    cin >> parejie;
+
+    s.makeBinaryAboutStudentsWith10AndOthers(faila_nosaukums, desmitnieki, parejie, semestris);
 }
 
 int main()
@@ -328,6 +383,7 @@ int main()
         cout << "4. Aprekinat video atzimi katra prieksmeta 1. semestri (U215)" << endl;
         cout << "5. Izdrukat informaciju par studentu ar konkretu studentu apliecibas numuru (U216)" << endl;
         cout << "6. Izdrukat zinas par tiem studentiem, kuriem 1. semestri videja atzime ir lielaka par 5 (U217)" << endl;
+        cout << "7. (EKS) Izvadit binara faila studentus, kuriem ir kaut viens desmit un cita binara faia parejos konkreta semestri" << endl;
         cout << "999. Beigt darbu" << endl;
 
         cin >> choice;
@@ -338,6 +394,7 @@ int main()
         else if(choice == 4) binaryReadAverageGradesInSemester(s);
         else if(choice == 5) binaryPrintInfoAboutStudent(s);
         else if(choice == 6) binaryPrintInfoAboutStudentsWithGradeGreaterThan(s);
+        else if(choice == 7) binaryMakeAboutStudentsWith10AndOthers(s);
         else if(choice == 999) break;
         enterToContinue();
     }
