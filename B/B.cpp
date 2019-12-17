@@ -95,7 +95,7 @@ int integerB3(int integer)
 
     // ........
     if (length == 3) {
-        return integer / 10 / 10;
+        return integer / 100;
     }
 
     int processedInteger = 0;
