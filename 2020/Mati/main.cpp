@@ -1,5 +1,5 @@
 /*
- * Jānis Kristaps Lusis
+ * Jānis Kristaps Lūsis
  * JL17030
  * 01.05.2020
 */
