@@ -70,7 +70,7 @@ class Barber
 
     int getCustomerJobFinishedAt() 
     {
-        return this->customer_started_at + this->customer_job_duration;
+        return this->customer_started_at + this->customer_job_duration - 1;
     }
 
     void setCustomer(int customer_number, int current_timestamp, int customer_job_duration) 
@@ -196,7 +196,6 @@ class CustomerService
     public:
     void addToQueue(int customer_number, int job_duration)
     {
-        cout << "Added to queue: " << customer_number << endl;
         this->customers[customer_number - 1] = job_duration;
         this->total_customers++;
     }
@@ -263,15 +262,11 @@ class BarberJobService
 
     bool assignJob(int current_timestamp, int customer_number, int customer_job_duration)
     {
-        cout << "Trying to assign barber to " << current_timestamp << " " << customer_number << " " << customer_job_duration << endl;
         Barber* barber = this->barber_service->getBarberForJob(current_timestamp, customer_job_duration);
 
         if (!barber) {
-            cout << "Failed" << endl;
             return false;
         }
-
-        cout << "Asigned to " << barber->getNumber() << endl;
         
         barber->setCustomer(customer_number, current_timestamp, customer_job_duration);
 
@@ -284,12 +279,12 @@ class BarberJobService
             return;
         }
 
-        bool finished_job_added = false;
+        int finished_job_count = 0;
 
         for (int barber_number = 1; barber_number <= this->barber_service->getBarberCount(); barber_number++) {
             Barber* barber = this->barber_service->getBarberByNumber(barber_number);
 
-            if (barber->getCustomerNumber() && barber->getCustomerJobFinishedAt() <= current_timestamp) {
+            if (barber->getCustomerNumber() && barber->getCustomerJobFinishedAt() < current_timestamp) {
                 this->addFinishedJob(
                     barber->getCustomerJobFinishedAt(), 
                     barber->getNumber(), 
@@ -297,39 +292,45 @@ class BarberJobService
                 );
 
                 barber->clearCustomer();
-                finished_job_added = true;
+                finished_job_count++;
             }
         }
 
-        if (finished_job_added) {
-            this->printFinishedJobs(output_stream);
+        if (finished_job_count) {
+            this->printFinishedJobs(output_stream, finished_job_count);
         }
     }
 
     private:
     void addFinishedJob(int job_finished_at, int barber_number, int customer_number)
     {
-        cout << "Finished job: " << job_finished_at << " " << barber_number << " " << customer_number << endl;
         this->finished_jobs[barber_number - 1][I_JOB_FINISHED_AT] = job_finished_at;
         this->finished_jobs[barber_number - 1][I_CUSTOMER_NUMBER] = customer_number;
         
         this->customer_service->advanceServedCount();
     }
 
-    // Sorts jobs so the timestamps ar chronological and follow barber number order and outputs them, then clears them
-    void printFinishedJobs(fstream &output_stream)
+    // Loops through all jobs by finding the oldest ones, printing them out and clearing them afterwards
+    void printFinishedJobs(fstream &output_stream, int finished_job_count)
     {
-        int sorted_jobs[MAX_BARBER_COUNT][2] = {}; // TODO: Actually sort them
+        for (int i = 0; i < finished_job_count; i++) {
+            int lowest_job_finished_at = 0;
+            int selected_barber_number = 0;
 
-        for (int barber_number = 1; barber_number <= this->barber_service->getBarberCount(); barber_number++) {
-            // If data is set, write out
-            if (this->finished_jobs[barber_number - 1][I_JOB_FINISHED_AT] != 0) {
-                output_stream << this->finished_jobs[barber_number - 1][I_JOB_FINISHED_AT] << " " << barber_number << " " << this->finished_jobs[barber_number - 1][I_CUSTOMER_NUMBER] << endl;
+            for (int barber_number = 1; barber_number <= this->barber_service->getBarberCount(); barber_number++) {
+                int job_finished_at = this->finished_jobs[barber_number - 1][I_JOB_FINISHED_AT];
+
+                if (job_finished_at && (!lowest_job_finished_at || lowest_job_finished_at < job_finished_at)) {
+                    lowest_job_finished_at = lowest_job_finished_at;
+                    selected_barber_number = barber_number;
+                }
             }
 
+            output_stream << this->finished_jobs[selected_barber_number - 1][I_JOB_FINISHED_AT] << " " << selected_barber_number << " " << this->finished_jobs[selected_barber_number - 1][I_CUSTOMER_NUMBER] << endl;
+
             // Clear
-            this->finished_jobs[barber_number - 1][I_JOB_FINISHED_AT] = 0;
-            this->finished_jobs[barber_number - 1][I_CUSTOMER_NUMBER] = 0;
+            this->finished_jobs[selected_barber_number - 1][I_JOB_FINISHED_AT] = 0;
+            this->finished_jobs[selected_barber_number - 1][I_CUSTOMER_NUMBER] = 0;
         }
     }
 };
@@ -409,8 +410,6 @@ bool readNextRow(fstream &input_stream, RowData* row)
 
     input_stream >> row->customer_number;
     input_stream >> row->customer_job_duration;
-
-    row->customer_job_duration--; // Since if jobs start on timestamp 21 and duration is 10, job will end on 30, so summed it's only 9 units
 
     return true;
 }
