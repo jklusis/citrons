@@ -231,9 +231,9 @@ int main()
 
         input_stream >> word_in_b;
 
-        cout << "Tryint go add word " << word_in_a << " " << word_in_b << endl;
-
         translation_service.addWord(word_in_a, word_in_b);
+
+        return 0;
     }
 
     // 2. While able to read words, try to translate them and output into file
