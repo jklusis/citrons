@@ -25,11 +25,11 @@ const int LARGE_CHAR_COUNT = MAX_LARGE_CHAR - MIN_LARGE_CHAR + 1;
 const int SMALL_CHAR_COUNT = MAX_SMALL_CHAR - MIN_SMALL_CHAR + 1;
 const int CHAR_COUNT = NUMBER_COUNT + LARGE_CHAR_COUNT + SMALL_CHAR_COUNT;
 
-const int MAX_WORD_LENGTH = 20;
+const int MAX_WORD_LENGTH = 20 + 1;
 const char UNKNOWN_WORD_PREFIX = '?';
 
-const char MODE_A_TO_B = '>';
-const char MODE_B_TO_A = '<';
+const char MODE_A_TO_B[4] = "-->";
+const char MODE_B_TO_A[4] = "<--";
 
 // Function declarations
 
@@ -217,13 +217,21 @@ int main()
         input_stream >> word_in_a;
 
         // Resolve translation type if '-' is encountered
-        if (word_in_a[0] == '-') {
-            is_mode_a_to_b = word_in_a[2] == MODE_A_TO_B;
+        if (are_strings_equal(word_in_a, MODE_A_TO_B)) {
+            is_mode_a_to_b = true;
+
+            break;
+        }
+
+        if (are_strings_equal(word_in_a, MODE_B_TO_A)) {
+            is_mode_a_to_b = false;
 
             break;
         }
 
         input_stream >> word_in_b;
+
+        cout << "Tryint go add word " << word_in_a << " " << word_in_b << endl;
 
         translation_service.addWord(word_in_a, word_in_b);
     }
@@ -272,6 +280,10 @@ bool are_strings_equal(char* one, const char* two)
 {
     for (int i = 0; one[i] != 0; i++) {
         if (one[i] != two[i]) {
+            return false;
+        }
+
+        if (one[i + 1] == 0 && two[i + 1] != 0) {
             return false;
         }
     }
