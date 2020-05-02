@@ -36,30 +36,24 @@ bool are_strings_equal(char* one, const char* two);
 
 struct Word
 {
-    // On way linked list
+    // One way linked list
     Word* next = NULL;
 
-    char word_a[MAX_WORD_LENGTH] = {};
-    char word_b[MAX_WORD_LENGTH] = {};
+    char original[MAX_WORD_LENGTH] = {};
+    Word* translation = NULL;
 
-    Word(char* word_a, char* word_b)
+    Word(char* original)
     {
-        copy_string(word_a, this->word_a, MAX_WORD_LENGTH);
-        copy_string(word_b, this->word_b, MAX_WORD_LENGTH);
+        copy_string(original, this->original, MAX_WORD_LENGTH);
     }
 
     ~Word()
     {
-        cout << "Deleting self: " << this->word_a << endl;
+        cout << "Deleting self: " << this->original << endl;
 
-        // Cascade all next items in list
-        while (this->next != NULL) {
-            Word* next_word = this->next;
-            this->next = this->next->next;
-
-            cout << "Deleting child: " << next_word->word_a << " " << next_word->word_b << endl;
-
-            delete next_word;
+        // Cascade
+        if (this->next != NULL) {
+            delete this->next;
         }
     }
 };
@@ -77,7 +71,7 @@ class DictionaryRepository
         // Delete all the created words (Kas ar NEW izveidots, tam ar DELETE būs mirt)
         for (int i = 0; i < CHAR_COUNT; i++) {
             if (dictionary[i] != NULL) {
-                delete dictionary[i];
+                delete dictionary[i]; // They cascade themselves
             }
         }
     }
@@ -87,12 +81,12 @@ class DictionaryRepository
         int dictionary_index = this->resolveDictionaryIndex(first_char);
         Word* last_word = this->resolveLastWord(dictionary_index);
 
-        cout << "Trying to add word " << word->word_a << endl;
+        cout << "Trying to add word " << word->original << endl;
 
         if (last_word) {
             last_word->next = word;
 
-            cout << "Word added to previous word in list - " << last_word->word_a << endl;
+            cout << "Word added to previous word in list - " << last_word->original << endl;
 
             return;
         }
@@ -107,18 +101,18 @@ class DictionaryRepository
     {
         int dictionary_index = this->resolveDictionaryIndex(searchable_word[0]);
 
-        cout << "Searching for " << searchable_word << endl;
+        cout << "Searching for " << searchable_word << ".. ";
 
         for (Word* word = this->dictionary[dictionary_index]; word != NULL; word = word->next) {
-            cout << "Comparing " << word->word_a << " to " << searchable_word << endl;
-            if (are_strings_equal(word->word_a, searchable_word)) {
-                cout << "Success - found" << endl;
+            cout << "..comparing " << word->original << " to " << searchable_word << ".. ";
+            if (are_strings_equal(word->original, searchable_word)) {
+                cout << "..success - found" << endl;
 
                 return word;
             }
         }
 
-        cout << "Fail - Not found" << endl;
+        cout << "..fail - not found" << endl;
 
         return NULL;
     }
@@ -177,43 +171,37 @@ int main()
     // 2. ja tulkojums nav, izvadam ?oriģinālais
     // 3. ja rindas beigas, sākam jaunu rindu (atkārtojam 0.)
 
-    char word_a[MAX_WORD_LENGTH] = "Abols";
-    char word_b[MAX_WORD_LENGTH] = "Apple";
+    char original[MAX_WORD_LENGTH] = "Abols";
 
     DictionaryRepository dictionary_repository;
 
-    Word* word = new Word(word_a, word_b);
-    dictionary_repository.addWord(word->word_a[0], word);
+    Word* word = new Word(original);
+    dictionary_repository.addWord(word->original[0], word);
 
-    strcpy(word_a, "Abols2");
-    strcpy(word_b, "Apple2");
+    strcpy(original, "Abols2");
 
-    word = new Word(word_a, word_b);
-    dictionary_repository.addWord(word->word_a[0], word);
+    word = new Word(original);
+    dictionary_repository.addWord(word->original[0], word);
 
-    strcpy(word_a, "Banans");
-    strcpy(word_b, "Banana");
+    strcpy(original, "Banans");
 
-    word = new Word(word_a, word_b);
-    dictionary_repository.addWord(word->word_a[0], word);
+    word = new Word(original);
+    dictionary_repository.addWord(word->original[0], word);
 
-    strcpy(word_a, "Zars");
-    strcpy(word_b, "Zbranch");
+    strcpy(original, "Zars");
 
-    word = new Word(word_a, word_b);
-    dictionary_repository.addWord(word->word_a[0], word);
+    word = new Word(original);
+    dictionary_repository.addWord(word->original[0], word);
 
-    strcpy(word_a, "9kaut kas");
-    strcpy(word_b, "9something");
+    strcpy(original, "9kaut kas");
 
-    word = new Word(word_a, word_b);
-    dictionary_repository.addWord(word->word_a[0], word);
+    word = new Word(original);
+    dictionary_repository.addWord(word->original[0], word);
 
-    strcpy(word_a, "abols");
-    strcpy(word_b, "apple");
+    strcpy(original, "abols");
 
-    word = new Word(word_a, word_b);
-    dictionary_repository.addWord(word->word_a[0], word);
+    word = new Word(original);
+    dictionary_repository.addWord(word->original[0], word);
 
 
     word = dictionary_repository.getWord("Abols");
