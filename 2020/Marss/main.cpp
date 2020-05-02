@@ -4,7 +4,6 @@
  * 02.05.2020.
 */
 
-#include <iostream>
 #include <fstream>
 
 using namespace std;
@@ -42,12 +41,14 @@ struct Alien
 {
     int number;
     
+    Alien* parent;
     Alien* left_child = NULL;
     Alien* right_child = NULL;
 
-    Alien(int number)
+    Alien(int number, Alien* parent = NULL)
     {
         this->number = number;
+        this->parent = parent;
     }
 
     ~Alien()
@@ -107,7 +108,7 @@ class AlienValidationService
     void failIfParentLeftChildAlreadyExists(Alien* parent) 
     {
         if (!parent) {
-            throw "This is not supposed to happen (Parent doesn't exist)";
+            throw "This is not supposed to happen (Parent is nullptr)";
         }
 
         if (parent->left_child) {
@@ -118,7 +119,7 @@ class AlienValidationService
     void failIfParentRightChildAlreadyExists(Alien* parent) 
     {
         if (!parent) {
-            throw "This is not supposed to happen (Parent doesn't exist)";
+            throw "This is not supposed to happen (Parent is nullptr)";
         }
 
         if (parent->right_child) {
@@ -181,13 +182,11 @@ class AlienService
             if (command == COMMAND_PRINT_FAVOURITE_ALIENS) {
                 return this->printFavouriteAliens(input_stream, output_stream);
             }
-        } catch (const char* validation_exception) { // Process validation error
+        } catch (const char* validation_exception) { // Catch and process validation error
             output_stream << validation_exception << endl;
 
             return true;
         }
-
-        cout << "Unknown Command (safe):" << command << endl;
 
         throw "Unknown command";
     }
@@ -198,20 +197,13 @@ class AlienService
         int parent_number;
         int child_number;
 
-        input_stream >> parent_number;
-        input_stream >> child_number;
-
-        this->validation_service->failIfParentChildEqual(parent_number, child_number);
-        this->validation_service->failIfParentDoesntExist(parent_number);
-        this->validation_service->failIfChildAlreadyExists(child_number);
+        this->readParentChildNumbersAndValidateOrFail(input_stream, parent_number, child_number);
 
         // Resolve parent
-        cout << "--- RESOLVER START ---" << endl;
         Alien* parent = this->resolveAlien(parent_number, this->ancestor);
-        cout << "--- RESOLVER END ---" << endl;
         this->validation_service->failIfParentLeftChildAlreadyExists(parent);
 
-        parent->left_child = new Alien(child_number);
+        parent->left_child = new Alien(child_number, parent);
         this->added_aliens[child_number - 1] = true;
 
         return true;
@@ -221,24 +213,27 @@ class AlienService
     {
         int parent_number;
         int child_number;
+        
+        this->readParentChildNumbersAndValidateOrFail(input_stream, parent_number, child_number);
 
+        // Resolve parent
+        Alien* parent = this->resolveAlien(parent_number, this->ancestor);
+        this->validation_service->failIfParentRightChildAlreadyExists(parent);
+        
+        parent->right_child = new Alien(child_number, parent);
+        this->added_aliens[child_number - 1] = true;
+
+        return true;
+    }
+
+    void readParentChildNumbersAndValidateOrFail(fstream &input_stream, int &parent_number, int &child_number)
+    {
         input_stream >> parent_number;
         input_stream >> child_number;
 
         this->validation_service->failIfParentChildEqual(parent_number, child_number);
         this->validation_service->failIfParentDoesntExist(parent_number);
         this->validation_service->failIfChildAlreadyExists(child_number);
-
-        // Resolve parent
-        cout << "--- RESOLVER START ---" << endl;
-        Alien* parent = this->resolveAlien(parent_number, this->ancestor);
-        cout << "--- RESOLVER END ---" << endl;
-        this->validation_service->failIfParentRightChildAlreadyExists(parent);
-        
-        parent->right_child = new Alien(child_number);
-        this->added_aliens[child_number - 1] = true;
-
-        return true;
     }
 
     bool printFavouriteAliens(fstream &input_stream, fstream &output_stream)
@@ -249,46 +244,69 @@ class AlienService
 
         this->validation_service->failIfAlienIsNotInFamily(alien_number);
 
-        cout << "? " << alien_number << endl;
+        Alien* alien = this->resolveAlien(alien_number, this->ancestor);    
 
-        // cout << previous << next << endl;
+        int previous_number = 0;
+        int next_number = 0;
+
+        // Resolved by reference
+        resolveFavouriteAliensForAlien(alien, previous_number, next_number);
+
+        output_stream << previous_number << " " << next_number << endl;
 
         return true;
     }
 
+    void resolveFavouriteAliensForAlien(Alien* alien, int &previous_number, int &next_number)
+    {
+        // If left and right child exists, then both their numbers
+        if (alien->left_child && alien->right_child) {
+            previous_number = alien->left_child->number;
+            next_number = alien->right_child->number;
+
+            return;
+        }
+
+        // For next cases parent will always be the next one; if parent doesn't exist, then its number is 0
+        next_number = alien->parent ? alien->parent->number : 0;
+
+        // If left child exists and right doesn't, then left and parent
+        if (alien->left_child && !alien->right_child) {
+            previous_number = alien->right_child->number;
+
+            return;
+        }
+        
+        // If left doesn't exist but right does, then right and parent
+        if (!alien->left_child && alien->right_child) {
+            previous_number = alien->right_child->number;
+
+            return;
+        } 
+
+        // If there are no left and right children, then 0 and parent
+        previous_number = 0;
+    }
+
     Alien* resolveAlien(int alien_number, Alien* current_alien)
     {
-        cout << "Trying to resolve " << alien_number << "...." << endl;
-
         if (!current_alien) {
-            cout << "Alien not found" << endl;
-
             return NULL;
         }
 
-        cout << "Right now examining " << current_alien->number << endl;
-
         if (current_alien->number == alien_number) {
-            cout << "Alien found!" << endl;
-
             return current_alien;
         }
         
         Alien* resolved_alien = resolveAlien(alien_number, current_alien->left_child);
         if (resolved_alien) {
-            cout << "Alien found as left child!" << endl;
-
             return resolved_alien;
         }
 
         resolved_alien = resolveAlien(alien_number, current_alien->right_child);
         if (resolved_alien) {
-            cout << "Alien found as right child!" << endl;
-
             return resolved_alien;
         }
-
-        cout << "Alien not found in root or any of direct children" << endl;
 
         return NULL;
     }
