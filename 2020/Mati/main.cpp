@@ -4,15 +4,14 @@
  * 01.05.2020
 */
 
-#include <iostream>
 #include <fstream>
 
 using namespace std;
 
 // Constant declarations
 
-const char* INPUT_FILE_NAME = "mati.in";
-const char* OUTPUT_FILE_NAME = "mati.out";
+const char* INPUT_FILE_NAME = "hair.in";
+const char* OUTPUT_FILE_NAME = "hair.out";
 
 const int MAX_TIMESTAMP = 2000000000;
 
@@ -384,7 +383,7 @@ int main()
         current_timestamp++;
     }
 
-    return 1;
+    return 0;
 }
 
 int readBarberCount(fstream &input_stream)
