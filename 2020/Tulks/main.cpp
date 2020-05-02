@@ -4,14 +4,14 @@
  * 02.05.2020
 */
 
-#include <iostream>
 #include <fstream>
 
 using namespace std;
 
 // Constant declarations
 
-const int MAX_WORD_LENGTH = 20;
+const char* INPUT_FILE_NAME = "tulks.in";
+const char* OUTPUT_FILE_NAME = "tulks.out";
 
 const int MIN_NUMBER = 48;
 const int MAX_NUMBER = 57;
@@ -23,12 +23,16 @@ const int MAX_SMALL_CHAR = 122;
 const int NUMBER_COUNT = MAX_NUMBER - MIN_NUMBER + 1;
 const int LARGE_CHAR_COUNT = MAX_LARGE_CHAR - MIN_LARGE_CHAR + 1;
 const int SMALL_CHAR_COUNT = MAX_SMALL_CHAR - MIN_SMALL_CHAR + 1;
-
 const int CHAR_COUNT = NUMBER_COUNT + LARGE_CHAR_COUNT + SMALL_CHAR_COUNT;
 
+const int MAX_WORD_LENGTH = 20;
 const char UNKNOWN_WORD_PREFIX = '?';
 
+const char MODE_A_TO_B = '>';
+const char MODE_B_TO_A = '<';
+
 // Function declarations
+
 void copy_string(const char* from, char* to, int to_length);
 bool are_strings_equal(char* one, const char* two);
 
@@ -42,15 +46,13 @@ struct Word
     char original[MAX_WORD_LENGTH] = {};
     Word* translation = NULL;
 
-    Word(char* original)
+    Word(const char* original)
     {
         copy_string(original, this->original, MAX_WORD_LENGTH);
     }
 
     ~Word()
     {
-        cout << "Deleting self: " << this->original << endl;
-
         // Cascade
         if (this->next != NULL) {
             delete this->next;
@@ -62,7 +64,8 @@ struct Word
 
 class DictionaryRepository
 {
-    // Dictionary contains pointers that point to first structure that begins with char N (e.g. char A)
+    // Dictionary contains pointers that point to first structure that contains word that begins with char N (e.g. char A)
+    // Ideally a binary tree could be implemented instead of a linked list to improve performance
     Word* dictionary[CHAR_COUNT] = {NULL};
 
     public:
@@ -76,24 +79,18 @@ class DictionaryRepository
         }
     }
 
-    void addWord(char first_char, Word* word)
+    void addWord(Word* word)
     {
-        int dictionary_index = this->resolveDictionaryIndex(first_char);
+        int dictionary_index = this->resolveDictionaryIndex(word->original[0]);
         Word* last_word = this->resolveLastWord(dictionary_index);
-
-        cout << "Trying to add word " << word->original << endl;
 
         if (last_word) {
             last_word->next = word;
-
-            cout << "Word added to previous word in list - " << last_word->original << endl;
 
             return;
         }
 
         this->dictionary[dictionary_index] = word;
-
-        cout << "Word added as the first word in dictionary index " << dictionary_index << endl;
     }
 
     // Searches the dictionary for the word; if it is found, word structure is returned, otherwise NULL is returned.
@@ -101,18 +98,11 @@ class DictionaryRepository
     {
         int dictionary_index = this->resolveDictionaryIndex(searchable_word[0]);
 
-        cout << "Searching for " << searchable_word << ".. ";
-
         for (Word* word = this->dictionary[dictionary_index]; word != NULL; word = word->next) {
-            cout << "..comparing " << word->original << " to " << searchable_word << ".. ";
             if (are_strings_equal(word->original, searchable_word)) {
-                cout << "..success - found" << endl;
-
                 return word;
             }
         }
-
-        cout << "..fail - not found" << endl;
 
         return NULL;
     }
@@ -133,8 +123,6 @@ class DictionaryRepository
             return (int)first_char - MIN_SMALL_CHAR + NUMBER_COUNT + LARGE_CHAR_COUNT;
         }
 
-        cout << "Invalid character: " << first_char << endl;
-
         throw "Invalid character";
     }
 
@@ -154,64 +142,115 @@ class DictionaryRepository
     }
 };
 
-class DictionaryService
+class TranslationService
 {
+    DictionaryRepository repository_a;
+    DictionaryRepository repository_b;
 
+    public:
+    void addWord(const char* word_in_a, const char* word_in_b)
+    {
+        Word* word_a = new Word(word_in_a);
+        Word* word_b = new Word(word_in_b);
+
+        word_a->translation = word_b;
+        word_b->translation = word_a;
+
+        this->repository_a.addWord(word_a);
+        this->repository_b.addWord(word_b);
+    }
+
+    void translateFromAToB(const char* word_in_a, char* word_out)
+    {
+        this->resolveTranslation(word_in_a, this->getWordInA(word_in_a), word_out);
+    }
+
+    void translateFromBToA(const char* word_in_b, char* word_out)
+    {
+        this->resolveTranslation(word_in_b, this->getWordInB(word_in_b), word_out);
+    }
+
+    private:
+    Word* getWordInA(const char* word)
+    {
+        return this->repository_a.getWord(word);
+    }
+
+    Word* getWordInB(const char* word)
+    {
+        return this->repository_b.getWord(word);
+    }
+
+    void resolveTranslation(const char* word_to_translate, Word* word, char* word_out)
+    {
+        if (word) {
+            copy_string(word->translation->original, word_out, MAX_WORD_LENGTH + 1);
+
+            return;
+        }
+
+        word_out[0] = UNKNOWN_WORD_PREFIX;
+        for (int i = 0; word_to_translate[i] != 0; i++) {
+            if (i > MAX_WORD_LENGTH) {
+                break;
+            }
+
+            word_out[i + 1] = word_to_translate[i];
+        }
+    }
 };
 
 int main()
 {
-    // Ielasam visus vārdus kaut kādā bibliotēkā; jābūt bi-directional, lai var atrast gan no A uz B gan no B uz A (divas dažādas biblitotēkas, kas satur pointerus un rāda viens uz otru?)
-    // Ķip var būt a-z A-Z 0-9; domāju, ka jātaisa saistītais saraksts vai kkāds hash mappings, lai var pēc pirmā, otrā, trešā simbola vtml fiksi atrast
+    fstream input_stream(INPUT_FILE_NAME, ios::in);
+    fstream output_stream(OUTPUT_FILE_NAME, ios::out);
 
-    // Noskaidrojam direciton, vienreizējs pasākums laikam
+    TranslationService translation_service;
 
-    // 0. Lasam rindu pa vārdam
-    // 1. ja tulkojums ir, tad uzreiz izvadam vārdu
-    // 2. ja tulkojums nav, izvadam ?oriģinālais
-    // 3. ja rindas beigas, sākam jaunu rindu (atkārtojam 0.)
+    bool is_mode_a_to_b = false;
 
-    char original[MAX_WORD_LENGTH] = "Abols";
+    // 1. Read the dictionary into the memory and resolve type
+    while (true) {
+        char word_in_a[MAX_WORD_LENGTH] = {};
+        char word_in_b[MAX_WORD_LENGTH] = {};
 
-    DictionaryRepository dictionary_repository;
+        input_stream >> word_in_a;
 
-    Word* word = new Word(original);
-    dictionary_repository.addWord(word->original[0], word);
+        // Resolve translation type if '-' is encountered
+        if (word_in_a[0] == '-') {
+            is_mode_a_to_b = word_in_a[2] == MODE_A_TO_B;
 
-    strcpy(original, "Abols2");
+            break;
+        }
 
-    word = new Word(original);
-    dictionary_repository.addWord(word->original[0], word);
+        input_stream >> word_in_b;
 
-    strcpy(original, "Banans");
+        translation_service.addWord(word_in_a, word_in_b);
+    }
 
-    word = new Word(original);
-    dictionary_repository.addWord(word->original[0], word);
+    // 2. While able to read words, try to translate them and output into file
+    while (true) {
+        char word_to_translate[MAX_WORD_LENGTH] = {};
+        
+        input_stream >> word_to_translate;
 
-    strcpy(original, "Zars");
+        if (!word_to_translate[0]) {
+            break;
+        }
 
-    word = new Word(original);
-    dictionary_repository.addWord(word->original[0], word);
+        char translated_string[MAX_WORD_LENGTH + 1] = {};
+        
+        if (is_mode_a_to_b) {
+            translation_service.translateFromAToB(word_to_translate, translated_string);
+        } else {
+            translation_service.translateFromBToA(word_to_translate, translated_string);
+        }
 
-    strcpy(original, "9kaut kas");
+        output_stream << translated_string << " ";
+    }
 
-    word = new Word(original);
-    dictionary_repository.addWord(word->original[0], word);
-
-    strcpy(original, "abols");
-
-    word = new Word(original);
-    dictionary_repository.addWord(word->original[0], word);
-
-
-    word = dictionary_repository.getWord("Abols");
-    word = dictionary_repository.getWord("Abols2");
-    word = dictionary_repository.getWord("Banans");
-    word = dictionary_repository.getWord("Zars");
-    word = dictionary_repository.getWord("9kaut kas");
-    word = dictionary_repository.getWord("abols");
-    word = dictionary_repository.getWord("neeksiste");
-
+    input_stream.close();
+    output_stream.close();
 
     return 0;
 }
