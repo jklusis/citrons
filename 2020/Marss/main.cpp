@@ -41,14 +41,12 @@ struct Alien
 {
     int number;
     
-    Alien* parent;
     Alien* left_child = NULL;
     Alien* right_child = NULL;
 
-    Alien(int number, Alien* parent = NULL)
+    Alien(int number)
     {
         this->number = number;
-        this->parent = parent;
     }
 
     ~Alien()
@@ -61,46 +59,6 @@ struct Alien
         if (this->right_child) {
             delete this->right_child;
         }
-    }
-
-    bool hasParent()
-    {
-        return (bool)this->parent;
-    }
-
-    bool isAncestor()
-    {
-        return !this->hasParent();
-    }
-
-    bool isLeftChild()
-    {
-        return this->hasParent() && this == this->parent->left_child;
-    }
-
-    bool isRightChild()
-    {
-        return this->hasParent() && this == this->parent->right_child;
-    }
-
-    bool hasNoChildren()
-    {
-        return !this->hasLeftChild() && !this->hasRightChild();
-    }
-
-    bool hasLeftChild()
-    {
-        return (bool)this->left_child;
-    }
-
-    bool hasRightChild()
-    {
-        return (bool)this->right_child;
-    }
-
-    bool hasBothChildren()
-    {
-        return this->hasLeftChild() && this->hasRightChild();
     }
 };
 
@@ -242,7 +200,7 @@ class AlienService
         Alien* parent = this->resolveAlien(parent_number, this->ancestor);
         this->validation_service->failIfParentLeftChildAlreadyExists(parent);
 
-        parent->left_child = new Alien(child_number, parent);
+        parent->left_child = new Alien(child_number);
         this->added_aliens[child_number - 1] = true;
 
         return true;
@@ -258,7 +216,7 @@ class AlienService
         Alien* parent = this->resolveAlien(parent_number, this->ancestor);
         this->validation_service->failIfParentRightChildAlreadyExists(parent);
         
-        parent->right_child = new Alien(child_number, parent);
+        parent->right_child = new Alien(child_number);
         this->added_aliens[child_number - 1] = true;
 
         return true;
