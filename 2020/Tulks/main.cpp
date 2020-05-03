@@ -1,7 +1,7 @@
 /*
  * Jānis Kristaps Lūsis
  * JL17030
- * 02.05.2020
+ * 02.05.2020.
 */
 
 #include <fstream>
