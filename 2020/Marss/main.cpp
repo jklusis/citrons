@@ -68,6 +68,11 @@ struct Alien
         return (bool)this->parent;
     }
 
+    bool isAncestor()
+    {
+        return !this->hasParent();
+    }
+
     bool isLeftChild()
     {
         return this->hasParent() && this == this->parent->left_child;
@@ -147,7 +152,7 @@ class AlienValidationService
         }
 
         if (parent->left_child) {
-            throw ERROR_PARENT_RIGHT_CHILD_ALREADY_EXISTS;
+            throw ERROR_PARENT_LEFT_CHILD_ALREADY_EXISTS;
         }
     }
 
@@ -234,7 +239,6 @@ class AlienService
 
         this->readParentChildNumbersAndValidateOrFail(input_stream, parent_number, child_number);
 
-        // Resolve parent
         Alien* parent = this->resolveAlien(parent_number, this->ancestor);
         this->validation_service->failIfParentLeftChildAlreadyExists(parent);
 
@@ -251,7 +255,6 @@ class AlienService
         
         this->readParentChildNumbersAndValidateOrFail(input_stream, parent_number, child_number);
 
-        // Resolve parent
         Alien* parent = this->resolveAlien(parent_number, this->ancestor);
         this->validation_service->failIfParentRightChildAlreadyExists(parent);
         
@@ -269,93 +272,6 @@ class AlienService
         this->validation_service->failIfParentChildEqual(parent_number, child_number);
         this->validation_service->failIfParentDoesntExist(parent_number);
         this->validation_service->failIfChildAlreadyExists(child_number);
-    }
-
-    bool printFavouriteAliens(fstream &input_stream, fstream &output_stream)
-    {
-        int alien_number;
-
-        input_stream >> alien_number;
-
-        this->validation_service->failIfAlienIsNotInFamily(alien_number);
-
-        Alien* alien = this->resolveAlien(alien_number, this->ancestor);    
-
-        int previous_number = 0;
-        int next_number = 0;
-
-        // Resolved by reference
-        resolveFavouriteAliensForAlien(alien, previous_number, next_number);
-
-        output_stream << previous_number << " " << next_number << endl;
-
-        return true;
-    }
-
-    void resolveFavouriteAliensForAlien(Alien* alien, int &previous_number, int &next_number)
-    {
-        // If chief alive ancestor, then check only check children
-        if (!alien->hasParent()) {
-            previous_number = alien->hasLeftChild() ? alien->left_child->number : 0;
-            next_number = alien->hasRightChild() ? alien->right_child->number : 0;
-
-            return;
-        }
-
-        if (alien->hasBothChildren()) {
-            previous_number = alien->left_child->number;
-            next_number = alien->right_child->number;
-
-            return;
-        }
-
-        // If has only left child and..
-        if (alien->isLeftChild()) {
-            // If has only left child, previous is left and next is parent
-            if (alien->hasLeftChild()) {
-                previous_number = alien->left_child->number;
-                next_number = alien->parent->number;
-
-                return;
-            }
-
-            // If has only right child, previous is parent and next is child
-            if (alien->hasRightChild()) {
-                previous_number = alien->parent->number;
-                next_number = alien->right_child->number;
-
-                return;
-            }
-
-            // If has no children, then next is parent
-            previous_number = 0;
-            next_number = alien->parent->number;
-
-            return;
-        }
-
-        // If has only right child and..
-        if (alien->isRightChild()) {
-            // If has only left child, previous is child and next is 0
-            if (alien->hasLeftChild()) {
-                previous_number = alien->left_child->number;
-                next_number = 0;
-
-                return;
-            }
-
-            // If has only right child, previous is parent and next is right child
-            if (alien->hasRightChild()) {
-                previous_number = alien->parent->number;
-                next_number = alien->right_child->number;
-
-                return;
-            }
-
-            // If has no children, then previous is parent and next is 0
-            previous_number = alien->parent->number;
-            next_number = 0;
-        }
     }
 
     Alien* resolveAlien(int alien_number, Alien* current_alien)
@@ -379,6 +295,59 @@ class AlienService
         }
 
         return NULL;
+    }
+
+    bool printFavouriteAliens(fstream &input_stream, fstream &output_stream)
+    {
+        int alien_number;
+
+        input_stream >> alien_number;
+
+        this->validation_service->failIfAlienIsNotInFamily(alien_number);   
+
+        int previous_number = 0;
+        bool previous_found = false;
+        bool next_found = false;
+
+        walkAliensInOrder(this->ancestor, alien_number, output_stream, previous_number, previous_found, next_found);
+
+        // In case next wasn't found, 0 wasn't outputted so resolve that here
+        if (!next_found) {
+            output_stream << 0 << endl;
+        }
+
+        return true;
+    }
+
+    // Walks aliens with inorder traversal and outputs previous, next aliens for the searched alien
+    void walkAliensInOrder(Alien* alien, int &searched_alien_number, fstream &output_stream, int &previous_number, bool &previous_found, bool &next_found)
+    {
+        // Nothing to do here anymore
+        if (previous_found && next_found) {
+            return;
+        }
+
+        if (alien == NULL) {
+            return;
+        }
+
+        walkAliensInOrder(alien->left_child, searched_alien_number, output_stream, previous_number, previous_found, next_found);
+
+        if (alien->number != searched_alien_number) {
+            previous_number = alien->number;
+
+            if (previous_found && !next_found) { // If previous was found and current node is not the searched alien, output current node as the next node
+                output_stream << alien->number << endl;
+                next_found = true;
+
+                return; // Both previous and next found, can exit
+            }
+        } else { // If visited node is the searched alien, output previous number and mark it as found
+            output_stream << previous_number << " ";
+            previous_found = true;
+        }
+
+        walkAliensInOrder(alien->right_child, searched_alien_number, output_stream, previous_number, previous_found, next_found);
     }
 };
 
