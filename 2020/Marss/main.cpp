@@ -62,6 +62,41 @@ struct Alien
             delete this->right_child;
         }
     }
+
+    bool hasParent()
+    {
+        return (bool)this->parent;
+    }
+
+    bool isLeftChild()
+    {
+        return this->hasParent() && this == this->parent->left_child;
+    }
+
+    bool isRightChild()
+    {
+        return this->hasParent() && this == this->parent->right_child;
+    }
+
+    bool hasNoChildren()
+    {
+        return !this->hasLeftChild() && !this->hasRightChild();
+    }
+
+    bool hasLeftChild()
+    {
+        return (bool)this->left_child;
+    }
+
+    bool hasRightChild()
+    {
+        return (bool)this->right_child;
+    }
+
+    bool hasBothChildren()
+    {
+        return this->hasLeftChild() && this->hasRightChild();
+    }
 };
 
 class AlienValidationService
@@ -259,33 +294,68 @@ class AlienService
 
     void resolveFavouriteAliensForAlien(Alien* alien, int &previous_number, int &next_number)
     {
-        // If left and right child exists, then both their numbers
-        if (alien->left_child && alien->right_child) {
+        // If chief alive ancestor, then check only check children
+        if (!alien->hasParent()) {
+            previous_number = alien->hasLeftChild() ? alien->left_child->number : 0;
+            next_number = alien->hasRightChild() ? alien->right_child->number : 0;
+
+            return;
+        }
+
+        if (alien->hasBothChildren()) {
             previous_number = alien->left_child->number;
             next_number = alien->right_child->number;
 
             return;
         }
 
-        // For next cases parent will always be the next one; if parent doesn't exist, then its number is 0
-        next_number = alien->parent ? alien->parent->number : 0;
+        // If has only left child and..
+        if (alien->isLeftChild()) {
+            // If has only left child, previous is left and next is parent
+            if (alien->hasLeftChild()) {
+                previous_number = alien->left_child->number;
+                next_number = alien->parent->number;
 
-        // If left child exists and right doesn't, then left and parent
-        if (alien->left_child && !alien->right_child) {
-            previous_number = alien->right_child->number;
+                return;
+            }
+
+            // If has only right child, previous is parent and next is child
+            if (alien->hasRightChild()) {
+                previous_number = alien->parent->number;
+                next_number = alien->right_child->number;
+
+                return;
+            }
+
+            // If has no children, then next is parent
+            previous_number = 0;
+            next_number = alien->parent->number;
 
             return;
         }
-        
-        // If left doesn't exist but right does, then right and parent
-        if (!alien->left_child && alien->right_child) {
-            previous_number = alien->right_child->number;
 
-            return;
-        } 
+        // If has only right child and..
+        if (alien->isRightChild()) {
+            // If has only left child, previous is child and next is 0
+            if (alien->hasLeftChild()) {
+                previous_number = alien->left_child->number;
+                next_number = 0;
 
-        // If there are no left and right children, then 0 and parent
-        previous_number = 0;
+                return;
+            }
+
+            // If has only right child, previous is parent and next is right child
+            if (alien->hasRightChild()) {
+                previous_number = alien->parent->number;
+                next_number = alien->right_child->number;
+
+                return;
+            }
+
+            // If has no children, then previous is parent and next is 0
+            previous_number = alien->parent->number;
+            next_number = 0;
+        }
     }
 
     Alien* resolveAlien(int alien_number, Alien* current_alien)
