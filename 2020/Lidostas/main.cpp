@@ -386,6 +386,8 @@ void lidostas()
     fstream input_stream(INPUT_FILE_NAME, ios::in);
 
     AirportRepository repository(read_airport_count(input_stream));
+
+    // read_airport part didn't work on APTS for some reason but did work locally; possibly something related to how constructor processes parameters
     AirportService service(&repository, read_airport(input_stream), read_airport(input_stream), read_time(input_stream));
     read_flights(input_stream, &repository);
 
